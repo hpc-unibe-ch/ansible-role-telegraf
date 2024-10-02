@@ -5,7 +5,7 @@ telegraf_state: present
 
 telegraf_enabled: true
 
-telegraf_agent_version: 1.18.2
+telegraf_agent_version: 1.32.0
 telegraf_agent_version_patch: 1
 telegraf_agent_package: telegraf
 telegraf_agent_package_state: present
