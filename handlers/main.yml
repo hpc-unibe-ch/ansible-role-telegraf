@@ -2,7 +2,7 @@
 # handlers file for ansible-telegraf
 
 - name: "Restart Telegraf"
-  ansible.buitlin.systemd_service:
+  ansible.builtin.systemd_service:
     name: telegraf
     state: restarted
     enabled: true
