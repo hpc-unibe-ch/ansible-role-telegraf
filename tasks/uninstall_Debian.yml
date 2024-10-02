@@ -1,0 +1,18 @@
+---
+
+- name: Remove telegraf from apt-based system
+  ansible.builtin.apt:
+    name: "{{ telegraf_agent_package }}"
+    state: "absent"
+    autoremove: true
+    purge: true
+
+- name: Remove telegraf repository
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/telegraf.list
+    state: absent
+
+- name: Remove configuration files left on the system
+  ansible.builtin.file:
+    path: "{{ telegraf_agent_config_path }}"
+    state: absent

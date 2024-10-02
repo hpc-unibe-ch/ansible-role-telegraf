@@ -1,4 +1,8 @@
 ---
-- hosts: telegraf
-  roles:
-    - role: ansible-telegraf
+- name: Converge
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: "Include ansible-role-template"
+      ansible.builtin.include_role:
+        name: "unibeid.template"

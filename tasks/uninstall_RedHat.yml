@@ -1,0 +1,17 @@
+---
+
+- name: Remove telegraf from dnf-based system
+  ansible.builtin.dnf:
+    name: "{{ telegraf_agent_package }}"
+    state: "absent"
+    autoremove: true
+
+- name: Remove telegraf repository
+  ansible.builtin.yum_repository:
+    name: influxdb
+    state: absent
+
+- name: Remove configuration files left on the system
+  ansible.builtin.file:
+    path: "{{ telegraf_agent_config_path }}"
+    state: absent
