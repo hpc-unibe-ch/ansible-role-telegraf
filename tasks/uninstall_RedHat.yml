@@ -1,5 +1,11 @@
 ---
 
+- name: Ensure telegraf is stopped and disabled
+  ansible.builtin.systemd:
+    name: telegraf
+    state: stopped
+    enabled: false
+
 - name: Remove telegraf from dnf-based system
   ansible.builtin.dnf:
     name: "{{ telegraf_agent_package }}"
