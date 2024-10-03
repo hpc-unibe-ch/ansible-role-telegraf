@@ -1,164 +1,56 @@
-# dj-wasabi.telegraf
+# ansible-role-telegraf
 
-- [dj-wasabi.telegraf](#dj-wasabitelegraf)
-  * [Build status:](#build-status-)
-  * [Requirements](#requirements)
-    + [Supported systems](#supported-systems)
-    + [InfluxDB](#influxdb)
-    + [Docker](#docker)
-  * [Upgrade](#upgrade)
-    + [0.7.0](#070)
-  * [Role Variables](#role-variables)
-    + [Ansible role specific variables](#ansible-role-specific-variables)
-      - [Telegraf Package](#telegraf-package)
-    + [Telegraf agent process configuration.](#telegraf-agent-process-configuration)
-    + [Docker specific role variables:](#docker-specific-role-variables-)
-  * [Extra information](#extra-information)
-    + [ansible_fqdn problematic for getting hostname](#ansible-fqdn-problematic-for-getting-hostname)
-    + [Setting tags](#setting-tags)
-    + [Docker specifics](#docker-specifics)
-      - [Docker image](#docker-image)
-      - [Docker mounts](#docker-mounts)
-      - [Example Docker configuration](#example-docker-configuration)
-  * [Windows specific Variables](#windows-specific-variables)
-  * [Extra information](#extra-information-1)
-    + [telegraf_plugins_default](#telegraf-plugins-default)
-    + [telegraf_plugins_extra](#telegraf-plugins-extra)
-  * [Dependencies](#dependencies)
-  * [Example Playbook](#example-playbook)
-  * [Molecule](#molecule)
-  * [License](#license)
-  * [Author Information](#author-information)
+An Ansible role that installs and configures telegraf. Currently the role has the following
+features:
 
-## Build status:
+* Install telegraf agent
+* Manage telegraf config settings in `/etc/telegraf/telegraf.conf`, see
+  [role variables](#role-variables)
+* Completely remove telegraf agent
 
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fdj-wasabi%2Fansible-telegraf%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/dj-wasabi/ansible-telegraf/goto?ref=master) <img src="https://img.shields.io/ansible/role/d/5173"/> <img src="https://img.shields.io/ansible/quality/5173"/>
-
-This role will install and configure telegraf.
-
-Telegraf is an agent written in Go for collecting metrics from the system it's running on, or from other services, and writing them into InfluxDB.
-
-Design goals are to have a minimal memory footprint with a plugin system so that developers in the community can easily add support for collecting metrics from well known services (like Hadoop, Postgres, or Redis) and third party APIs (like Mailchimp, AWS CloudWatch, or Google Analytics).
-
-(https://github.com/influxdb/telegraf)
+> [!NOTE]
+> This role is a stripped down fork of [dj-wasabi.telegraf](https://github.com/dj-wasabi/ansible-telegraf)
+> to fit the needs of our site and add the feature to remove the telegraf agent
+> if it's no longer required on a system.
 
 ## Requirements
 
-### Supported systems
-
-This role supports the following systems:
-
- * Red Hat
- * Debian
- * Ubuntu
- * Docker container
- * (Open)Suse
- * Windows (Best effort)
- * FreeBSD (Best effort)
- * Archlinux (only "online" mode)
-
-So, you'll need one of those systems.. :-)
-Please sent Pull Requests or suggestions when you want to use this role for other systems.
-
-### InfluxDB
-
-You'll need an InfluxDB instance running somewhere on your network. Or 1 of the other output types found on https://github.com/influxdata/telegraf/#output-plugins
-
-### Docker
-
-Docker needs to be installed on the target host. I can recommend these roles to install Docker:
-
-* [jgeusebroek.docker](https://galaxy.ansible.com/jgeusebroek/docker)
-* [geerlingguy.docker](https://galaxy.ansible.com/geerlingguy/docker)
-
-This is only the case when the configuration is needed for a Telegraf inside a Docker container (When `telegraf_agent_docker: True`).
-
-## Upgrade
-### 0.7.0
-
-There was an issue:
-
-    If I configure a telegraf_plugins_extra, run ansible, delete the plugin and run ansible again, the plugin stays on the machine.
+No prerequisites necessary at the moment.
 
 ## Role Variables
 
-### Ansible role specific variables
+The most common variables are listed below, along with default values. See also
+`defaults/main.yml` for a complete list.
 
-Specifying the version to be installed:
+### telegraf_state
 
-* `telegraf_agent_version`: The version of Telegraf to install. If `telegraf_agent_package_state` is set to `latest`, then this property and value is ignored. Default: `1.10.0`
+    telegraf_state: present
 
-How `Telegraf` needs to be installed. There are 4 methods in getting `Telegraf` installed on the target host:
+Specify whether telegraf should be present or absent on the system.
 
-* Via the package manager, like `yum`, `apt` or `zypper` ("repo");
-* Via a download from the `https://dl.influxdata.com/` site ("online");
-* Already provided and is already available on the target host, but not yet installed/configured ("offline");
-* Already installed on the target host or done manually, but not yet configured ("manual");
+### ssh_manage_motd_file
 
-This can be configured by setting `telegraf_agent_package_method` to one of the appropriate values ( `repo`, `online`, `offline` or `manual`).
+    ssh_manage_motd_file: false
 
-#### Telegraf Package
+Specifies whether to craft a custom `/etc/motd` file showing some system
+informations like OS name/version, IP addresses and CPU and memory information.
+If set to false, the file `/etc/motd` is not modified, if set to true the file
+is managed an updated if needed.
 
-These properties set in how and what package will be installed.
+### telegraf_enabled
 
-* `telegraf_agent_package`: The name of the Telegraf package to install. When `telegraf_agent_package_method` is set to `online` or `offline`, it needs to have the full path of the file. Example: `telegraf_agent_package: /tmp/telegraf.rpm`. Default: `telegraf_agent_package: telegraf`.
-* `telegraf_agent_package_method`: The installation method to be used. Can choose between: `repo`, `offline` or `online`.
-* `telegraf_agent_package_state`: If the package should be `present` or `latest`. When set to `latest`, `telegraf_agent_version` will be ignored. Default: `present`
+    telegraf_enabled: true
 
-### Telegraf agent process configuration.
+Specifies whether the telegraf agent service is to be enabled on the system
 
-* `telegraf_agent_interval`: The interval configured for sending data to the server. Default: `10`
-* `telegraf_agent_debug`: Run Telegraf in debug mode. Default: `False`
-* `telegraf_agent_round_interval`: Rounds collection interval to 'interval' Default: True
-* `telegraf_agent_flush_interval`: Default data flushing interval for all outputs. Default: 10
-* `telegraf_agent_flush_jitter`: Jitter the flush interval by a random amount. Default: 0
-* `telegraf_agent_aws_tags`: Configure AWS ec2 tags into Telegraf tags section Default: `False`
-* `telegraf_agent_aws_tags_prefix`: Define a prefix for AWS ec2 tags. Default: `""`
-* `telegraf_agent_collection_jitter`: Jitter the collection by a random amount. Default: 0 (since v0.13)
-* `telegraf_agent_metric_batch_size`: The agent metric batch size. Default: 1000  (since v0.13)
-* `telegraf_agent_metric_buffer_limit`: The agent metric buffer limit. Default: 10000  (since v0.13)
-* `telegraf_agent_quiet`: Run Telegraf in quiet mode (error messages only). Default: `False` (since v0.13)
-* `telegraf_agent_logfile`: The agent logfile name. Default: '' (means to log to stdout) (since v1.1)
-* `telegraf_agent_hostname`: The agent hostname.  Default: `ansible_fqdn`
-* `telegraf_agent_omit_hostname`: Do no set the "host" tag in the agent. Default: `False` (since v1.1)
+### telegraf_agent_version
 
-### Docker specific role variables:
+    telegraf_agent_version: 1.32.0
 
-* `telegraf_agent_docker`: Install Telegraf as a docker container. Default: `False`
-* `telegraf_agent_docker_name`: Name of the docker container. Default: `telegraf`
-* `telegraf_agent_docker_network_mode`: Networking mode of the docker container. Default: `bridge`
-* `telegraf_agent_docker_restart_policy`: Docker container restart policy. Default: `unless-stopped`
-* `telegraf_agent_docker_image_version`: The version of the Docker Telegraf image to be used. Default the value contains the value given for `telegraf_agent_version`. Can be set to `latest` to get the actual `latest` tag for the provided Docker image.
-* `telegraf_uid_docker`: Override user id. Default: `995`
-* `telegraf_gid_docker`: Override group id. Default: `998`
+Specifying the version to be installed
+If `telegraf_agent_package_state` is set to `latest`, then this property and value is ignored.
 
-Full agent settings reference: [https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#agent-configuration](https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#agent-configuration).
-
-## Extra information
-
-### ansible_fqdn problematic for getting hostname
-
-Extra info regarding: ansible_fqdn problematic for getting hostname #105
-
-*Describe the bug*
-
-In some nodes I'm getting weird hostnames, mostly localhost.localdomain. Those nodes show proper configuration in hostnamectl. I've seen you're using 'ansible_fqdn' as default.
-
-Seems like ansible_fqdn and ansible_hostname can give different results, and sometimes even very weird results, as it sometimes makes DNS calls (which is not under my control in that cases) to infer that names.
-
-*Fix proposal*
-
-In my playbook I've added this parameter:
-
-	telegraf_agent_hostname: "{{ ansible_nodename }}"
-
-### Setting tags
-
-You can set tags for the host running telegraf:
-
-	telegraf_global_tags:
-	  - tag_name: some_name
-	    tag_value: some_value
+### telegraf_agent_output
 
 Specifying an output. The default is set to localhost, you'll have to specify the correct influxdb server:
 
@@ -169,82 +61,6 @@ Specifying an output. The default is set to localhost, you'll have to specify th
 	      - database = "telegraf"
         tagpass:
           - cpu = ["cpu0"]
-
-The config will be printed line by line into the configuration, so you could also use:
-
-	config:
-		- # Print an documentation line
-
-and it will be printed in the configuration file.
-
-### Docker specifics
-
-#### Docker image
-
-The official [Influxdata Telegraf image](https://hub.docker.com/_/telegraf) is used. 	`telegraf_agent_version` will translate to the image tag.
-
-#### Docker mounts
-
-Please note that the Docker container bind mounts basicly your whole system (read-only) to monitor the Docker Engine Host from within the container. To be precise:
-
-	- /etc/telegraf:/etc/telegraf:ro
-	- /:/hostfs:ro
-	- /etc:/hostfs/etc:ro
-	- /proc:/hostfs/proc:ro
-	- /sys:/hostfs/sys:ro
-	- /var/run:/var/run:ro
-
-More information: [https://github.com/influxdata/telegraf/blob/master/docs/FAQ.md](https://github.com/influxdata/telegraf/blob/master/docs/FAQ.md).
-
-#### Example Docker configuration
-
-	telegraf_agent_docker: True
-	# Force host networking mode, so Docker Engine Host traffic metrics can be gathered.
-	telegraf_agent_docker_network_mode: host
-	# Force a specific image tag.
-	telegraf_agent_version: 1.10.0-alpine
-
-	telegraf_plugins_default:
-	  - plugin: cpu
-	    config:
-	      - percpu = true
-	  - plugin: disk
-	    tagpass:
-	      - fstype = [ "ext4", "xfs" ]
-	    tagdrop:
-	      - path = [ "/etc", "/etc/telegraf", "/etc/hostname", "/etc/hosts", "/etc/resolv.conf" ]
-	  - plugin: io
-	  - plugin: mem
-	  - plugin: system
-	  - plugin: swap
-	  - plugin: netstat
-	  - plugin: processes
-	  - plugin: docker
-	    config:
-	      - endpoint = "unix:///var/run/docker.sock"
-	      - timeout = "5s"
-
-## Windows specific Variables
-
-**NOTE**
-
-_Supporting Windows is an best effort (I don't have the possibility to either test/verify changes on the various amount of available Windows instances). PR's specific to Windows will almost immediately be merged, unless some one is able to provide a Windows test mechanism via Travis or other service for Pull Requests._
-
-* `telegraf_win_install_dir`: The directory where Telegraf will be installed.
-* `telegraf_win_logfile`: The location to the logfile of Telegraf.
-* `telegraf_win_include`: The directory that will contain all plugin configuration.
-
-## openSUSE specific Variables
-
-* `telegraf_zypper_baseurl`:  The URL to the openSUSE repository that hosts Telegraf (for example, for openSUSE Leap: "http://download.opensuse.org/repositories/devel:/languages:/go/openSUSE_Leap_{{ ansible_distribution_version }}/").  If this is unspecified, a default repository will be used.
-
-## MacOS specific Variables
-
-**NOTE**
-
-_MacOS support is as the Window Support an best effort and not officially supported._
-
-* `telegraf_mac_user`:  Telegraf will run as this user (needed as running things as other users using brew is problematic)
 
 ## Extra information
 
@@ -303,74 +119,31 @@ An example might look like this:
 	      - fstype = [ "ext4", "xfs" ]
     	  - path = [ "/opt", "/home" ]
 
-If you want to define processors you can simply use `telegraf_processors` variable.
-An example might look like this:
-```
-telegraf_processors:
-  - processor: rename
-  - processor: rename.replace
-    config:
-        - tag = "level"
-        - dest = "LogLevel"
-```
-
-When you want to make use of the `grok` filter for the logparser:
-
-	telegraf_plugins_extra:
-		logparser:
-		plugin: logparser
-		config:
-			- files = ["/var/log/messages"]
-			- from_beginning = false
-		filter:
-			name: grok
-			config:
-			- patterns = ["invoked oom-killer"]
-
-When you want to include a sub inputs with their own configuration:
-```yaml
-sqs:
-  plugin: cloudwatch
-  config:
-    - region = "eu-west-1"
-    - access_key = "foo"
-    - secret_key = "bar"
-    - period = "1m"
-    - delay  = "2m"
-    - interval = "1m"
-    - namespace = "AWS/SQS"
-    - statistic_include = ["average"]
-  sub_inputs:
-    metrics:
-      - names = [
-          "ApproximateAgeOfOldestMessage",
-          "ApproximateNumberOfMessagesVisible",
-        ]
-    metrics.dimensions:
-      - name = "QueueName"
-      - value = "*"
-```
-
-## Dependencies
-
-No dependencies
-
 ## Example Playbook
+
+Including an example of how to use your role (for instance, with variables
+passed in as parameters) is always nice for users too:
 
     - hosts: servers
       roles:
-         - { role: dj-wasabi.telegraf }
+         - role: ubelix.telegraf
 
-## Molecule
+## Compatibility
 
-This roles is configured to be tested with Molecule. You can find on this page some more information regarding Molecule: https://werner-dijkerman.nl/2016/07/10/testing-ansible-roles-with-molecule-testinfra-and-docker/
+This role has been written for and tested on and is therefore compatible with:
+
+* Rocky-9
+* Ubuntu-22.04
+
+## Dependencies
+
+This role has no dependencies.
 
 ## License
 
-BSD
+MIT
 
 ## Author Information
 
-Please let me know if you have issues. Pull requests are also accepted! :-)
-
-mail: ikben [ at ] werner-dijkerman . nl
+The role was created in 2024 by the IT-Services Office of the University of Bern
+based on this repository: [dj-wasabi.telegraf](https://github.com/dj-wasabi/ansible-telegraf)
