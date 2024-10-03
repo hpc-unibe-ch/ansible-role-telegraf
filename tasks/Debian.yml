@@ -70,7 +70,7 @@
 
     - name: "Debian | Add Telegraf repository"
       ansible.builtin.copy:
-        content: "deb https://repos.influxdata.com/{{ ansible_distribution | lower }} stable main"
+        content: "deb {{ telegraf_repository_params | default('') }} https://repos.influxdata.com/{{ ansible_distribution | lower }} stable main"
         dest: /etc/apt/sources.list.d/telegraf.list
         mode: '0644'
       become: true
