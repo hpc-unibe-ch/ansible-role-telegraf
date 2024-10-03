@@ -3,6 +3,6 @@
   hosts: all
   gather_facts: true
   tasks:
-    - name: "Include ansible-role-template"
+    - name: "Include ansible-role-telegraf"
       ansible.builtin.include_role:
-        name: "unibeid.template"
+        name: "ubelix.telegraf"
