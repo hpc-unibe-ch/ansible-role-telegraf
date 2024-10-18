@@ -1,10 +1,14 @@
 ---
 
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
 - name: Ensure telegraf is stopped and disabled
   ansible.builtin.systemd:
     name: telegraf
     state: stopped
     enabled: false
+  when: "'telegraf' in ansible_facts.services"
 
 - name: Remove telegraf from dnf-based system
   ansible.builtin.dnf:
