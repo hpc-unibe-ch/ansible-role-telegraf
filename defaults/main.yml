@@ -61,4 +61,4 @@ telegraf_plugins_extra_exclusive: false
 telegraf_redhat_releasever: "$releasever"
 
 telegraf_yum_baseurl: "https://repos.influxdata.com/rhel/{{ telegraf_redhat_releasever }}/$basearch/stable"
-telegraf_yum_gpgkey: "https://repos.influxdata.com/influxdata-archive_compat.key"
+telegraf_yum_gpgkey: "https://repos.influxdata.com/influxdata-archive.key"
